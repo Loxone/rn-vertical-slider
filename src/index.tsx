@@ -129,8 +129,8 @@ export default class VerticalSlider extends React.Component<props, state> {
     return Math.floor(value * 100) / 100;
   };
 
-  _getSliderHeight = (value: number): number => {
-    const { min, max, height } = this.props;
+  _getSliderHeight = (value: number, height: number): number => {
+    const { min, max } = this.props;
     return ((value - min) * height) / (max - min);
   };
 
@@ -142,7 +142,7 @@ export default class VerticalSlider extends React.Component<props, state> {
       renderIndicator = null,
       animationDuration,
     } = this.props;
-    const sliderHeight = this._getSliderHeight(value);
+    const sliderHeight = this._getSliderHeight(value, height);
     let ballPosition = sliderHeight;
     const ballHeight = renderIndicator
       ? ballIndicatorHeight
@@ -154,22 +154,29 @@ export default class VerticalSlider extends React.Component<props, state> {
     } else {
       ballPosition = ballPosition - ballHeight / 2;
     }
-    Animated.parallel([
-      Animated.timing(this.state.sliderHeight, {
-        toValue: sliderHeight,
-        easing: Easing.linear,
-        duration: animationDuration || 0,
-        useNativeDriver: false,
-      }),
+
+    this._animateSliderTrack(sliderHeight);
+
       Animated.timing(this.state.ballHeight, {
         toValue: ballPosition,
         easing: Easing.linear,
         duration: animationDuration || 0,
         useNativeDriver: false,
-      }),
-    ]).start();
+      }).start();
     this.setState({ value });
   };
+
+  _animateSliderTrack = (sliderHeight: number):void => {
+    const {
+      animationDuration,
+    } = this.props;
+    Animated.timing(this.state.sliderHeight, {
+      toValue: sliderHeight,
+      easing: Easing.linear,
+      duration: animationDuration || 0,
+      useNativeDriver: false,
+    }).start()
+  }
 
   componentDidMount() {
     const { value } = this.props;
@@ -182,6 +189,11 @@ export default class VerticalSlider extends React.Component<props, state> {
     let shouldUpdate = nextProps !== this.props || nextProps.value !== this.state.value;
     if (shouldUpdate) {
       this._changeState(nextProps.value);
+    }
+
+    if (nextProps.height !== this.props.height) {
+      const sliderHeight = this._getSliderHeight(nextProps.value, nextProps.height);
+      this._animateSliderTrack(sliderHeight);
     }
     return shouldUpdate;
   }
