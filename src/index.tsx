@@ -82,8 +82,25 @@ export default class VerticalSlider extends React.Component<props, state> {
         if (this.props.disabled) {
           return;
         }
-        const value = this._fetchNewValueFromGesture(gestureState);
+
+        let isMovement = Math.abs(gestureState.dx) >= 1 || Math.abs(gestureState.dy) >= 1;
+
+        let value = 0;
+        if (isMovement) {
+          // slider was moved
+          value = this._fetchNewValueFromGesture(gestureState);
+        } else {
+          // slider was tapped
+          let sliderElementRect = _event.currentTarget.getBoundingClientRect();
+          value = this._fetchNewValueFromTap(sliderElementRect, gestureState.y0);
+        }
+
         this._changeState(value);
+
+        if (!isMovement && this.props.onChange) {
+          this.props.onChange(value);
+        }
+
         if (this.props.onComplete) {
           this.props.onComplete(value);
         }
@@ -110,6 +127,28 @@ export default class VerticalSlider extends React.Component<props, state> {
       ballHeight: new Animated.Value(0),
       panResponder,
     };
+  }
+
+  _fetchNewValueFromTap(sliderRect: any, tapYPos: number) {
+    const {
+      min,
+      max,
+      step,
+      height,
+    } = this.props;
+
+    const tapYPosWithOffset = tapYPos - sliderRect.y;
+    const ratio = tapYPosWithOffset / height;
+    const diff = max - min;
+    let valueFromMax = ratio * diff;
+    let newValue = 0;
+    newValue = Math.max(min, Math.min(max, max - valueFromMax));
+    if (step) {
+      newValue = Math.round(newValue / step) * step;
+    }
+    newValue = Math.floor(newValue * 100) / 100;
+
+    return newValue;
   }
 
   _fetchNewValueFromGesture = (gestureState: any): number => {
@@ -157,16 +196,16 @@ export default class VerticalSlider extends React.Component<props, state> {
 
     this._animateSliderTrack(sliderHeight);
 
-      Animated.timing(this.state.ballHeight, {
-        toValue: ballPosition,
-        easing: Easing.linear,
-        duration: animationDuration || 0,
-        useNativeDriver: false,
-      }).start();
+    Animated.timing(this.state.ballHeight, {
+      toValue: ballPosition,
+      easing: Easing.linear,
+      duration: animationDuration || 0,
+      useNativeDriver: false,
+    }).start();
     this.setState({ value });
   };
 
-  _animateSliderTrack = (sliderHeight: number):void => {
+  _animateSliderTrack = (sliderHeight: number): void => {
     const {
       animationDuration,
     } = this.props;
@@ -175,8 +214,8 @@ export default class VerticalSlider extends React.Component<props, state> {
       easing: Easing.linear,
       duration: animationDuration || 0,
       useNativeDriver: false,
-    }).start()
-  }
+    }).start();
+  };
 
   componentDidMount() {
     const { value } = this.props;
@@ -281,9 +320,9 @@ export default class VerticalSlider extends React.Component<props, state> {
               renderIndicator
                 ? {}
                 : {
-                    borderRadius: ballIndicatorWidth,
-                    backgroundColor: ballIndicatorColor,
-                  },
+                  borderRadius: ballIndicatorWidth,
+                  backgroundColor: ballIndicatorColor,
+                },
             ]}
           >
             {renderIndicator ? (
