@@ -66,6 +66,7 @@ export default class VerticalSlider extends React.Component<props, state> {
         _event: GestureResponderEvent,
         gestureState: PanResponderGestureState
       ) => {
+        this.disableTapHandler = true;
         if (this.props.disabled) {
           return;
         }
@@ -89,10 +90,16 @@ export default class VerticalSlider extends React.Component<props, state> {
         if (isMovement) {
           // slider was moved
           value = this._fetchNewValueFromGesture(gestureState);
+          setTimeout(() => {
+            this.disableTapHandler = false;
+          }, 100)
         } else {
           // slider was tapped
           let sliderElementRect = _event.currentTarget.getBoundingClientRect();
           value = this._fetchNewValueFromTap(sliderElementRect, gestureState.y0);
+          if (this.disableTapHandler) {
+            return;
+          }
         }
 
         this._changeState(value);
